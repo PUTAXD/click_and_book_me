@@ -32,6 +32,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Public route: /bookme/[slug]
+  if (request.nextUrl.pathname.startsWith("/bookme")) {
+    return supabaseResponse; // biarkan lewat, public access
+  }
+
   if (
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&

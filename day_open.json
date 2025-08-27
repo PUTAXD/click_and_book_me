@@ -1,0 +1,58 @@
+[
+  {
+    "day": "sun",
+    "is_enable": "true",
+    "list_hours": [
+      { "open": "02:00", "closed": "05:00" },
+      { "open": "06:00", "closed": "12:00" }
+    ]
+  },
+  {
+    "day": "mon",
+    "is_enable": "true",
+    "list_hours": [
+      { "open": "02:00", "closed": "05:00" },
+      { "open": "06:00", "closed": "12:00" }
+    ]
+  },
+  {
+    "day": "tue",
+    "is_enable": "true",
+    "list_hours": [
+      { "open": "02:00", "closed": "05:00" },
+      { "open": "06:00", "closed": "12:00" }
+    ]
+  },
+  {
+    "day": "wed",
+    "is_enable": "true",
+    "list_hours": [
+      { "open": "02:00", "closed": "05:00" },
+      { "open": "06:00", "closed": "12:00" }
+    ]
+  },
+  {
+    "day": "thu",
+    "is_enable": "true",
+    "list_hours": [
+      { "open": "02:00", "closed": "05:00" },
+      { "open": "06:00", "closed": "12:00" }
+    ]
+  },
+  {
+    "day": "fri",
+    "is_enable": "true",
+    "list_hours": [
+      { "open": "02:00", "closed": "05:00" },
+      { "open": "06:00", "closed": "12:00" }
+    ]
+  },
+  {
+    "day": "sat",
+    "is_enable": "true",
+    "list_hours": [
+      { "open": "02:00", "closed": "05:00" },
+      { "open": "06:00", "closed": "12:00" }
+    ]
+  }
+]

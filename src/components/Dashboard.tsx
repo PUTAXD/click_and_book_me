@@ -19,20 +19,6 @@ import {
 import Link from "next/link";
 import { Button } from "./ui/button";
 
-type Form = {
-  id: string;
-  title: string;
-  description: string | null;
-};
-
-type Submission = {
-  id: string;
-  created_at: string;
-  forms: {
-    title: string;
-  } | null;
-};
-
 export default async function Dashboard() {
   const cookieStore = cookies();
   const supabase = await createClient(cookieStore);

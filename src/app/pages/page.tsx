@@ -1,403 +1,220 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useSession } from "@/components/SessionProvider";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+  fetchPagesApi,
+  createPageApi,
+  deletePageApi,
+  BookMePageInsert,
+  Page,
+} from "@/lib/api/pages";
 
-interface PageItem {
-  id: string; // uuid
-  owner_id: string | null; // uuid
-  title: string | null; // text
-  slug: string | null; // text
-  content: object | null; // jsonb
-  is_published: boolean; // bool
-  created_at: string; // timestamptz
-  updated_at: string; // timestamptz
-  booking_intro: string | null;
-  time_section: number | null;
-  day_open: object | null; // Assuming JSONB for day_open
-  meet_point: string | null;
-}
+export default function NewBookMePage() {
+  const { session } = useSession();
 
-export default function PagesPage() {
-  const [pages, setPages] = useState<PageItem[]>([]);
-  const [newTitle, setNewTitle] = useState("");
-  const [newSlug, setNewSlug] = useState("");
-  const [newBookingIntro, setNewBookingIntro] = useState("");
-  const [newTimeSection, setNewTimeSection] = useState<number | "">("");
-  const [newDayOpen, setNewDayOpen] = useState(""); // For simplicity, treat as string for now
-  const [newMeetPoint, setNewMeetPoint] = useState("");
+  const [form, setForm] = useState<
+    Partial<BookMePageInsert> & { day_open_raw?: string; content_raw?: string }
+  >({
+    title: "",
+    slug: "",
+    booking_intro: "",
+    time_section: 0,
+    day_open_raw: "",
+    meet_point: "",
+    content_raw: "",
+    is_published: false,
+  });
 
-  const [editingPageId, setEditingPageId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editSlug, setEditSlug] = useState("");
-  const [editBookingIntro, setEditBookingIntro] = useState("");
-  const [editTimeSection, setEditTimeSection] = useState<number | "">("");
-  const [editDayOpen, setEditDayOpen] = useState(""); // For simplicity, treat as string for now
-  const [editMeetPoint, setEditMeetPoint] = useState("");
-
-  const [isNewPageDialogOpen, setIsNewPageDialogOpen] = useState(false);
-  const supabase = createClient();
+  const [pages, setPages] = useState<Page[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetchPages();
-  }, []);
+    handleFetchPages();
+  }, [session]);
 
-  const fetchPages = async () => {
-    const { data, error } = await supabase.from("pages").select("*");
+  async function handleFetchPages() {
+    setLoading(true);
+    const { pages: fetchedPages, error } = await fetchPagesApi(session);
+
     if (error) {
-      console.error("Error fetching pages:", error);
+      setMessage(error);
+      setPages([]);
     } else {
-      setPages(data as PageItem[]);
+      setPages(fetchedPages);
     }
-  };
+    setLoading(false);
+  }
 
-  const handleAddPage = async () => {
-    if (newTitle.trim() === "" || newSlug.trim() === "") return;
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      console.error("User not authenticated.");
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("pages")
-      .insert([
-        {
-          owner_id: user.id,
-          title: newTitle,
-          slug: newSlug,
-          content: {}, // Default empty JSONB
-          is_published: false,
-          booking_intro: newBookingIntro || null,
-          time_section: newTimeSection === "" ? null : newTimeSection,
-          day_open: newDayOpen ? JSON.parse(newDayOpen) : null,
-          meet_point: newMeetPoint || null,
-        },
-      ])
-      .select();
+    const { message: successMessage, error } = await createPageApi(
+      form,
+      session
+    );
 
     if (error) {
-      console.error("Error adding page:", error);
-    } else if (data) {
-      setPages([...pages, data[0] as PageItem]);
-      setNewTitle("");
-      setNewSlug("");
-      setNewBookingIntro("");
-      setNewTimeSection("");
-      setNewDayOpen("");
-      setNewMeetPoint("");
-      setIsNewPageDialogOpen(false); // Close dialog on success
-    }
-  };
-
-  const handleDeletePage = async (id: string) => {
-    const { error } = await supabase.from("pages").delete().eq("id", id);
-    if (error) {
-      console.error("Error deleting page:", error);
+      setMessage(error);
     } else {
-      setPages(pages.filter((page) => page.id !== id));
+      setMessage(successMessage);
+      setForm({
+        title: "",
+        slug: "",
+        booking_intro: "",
+        time_section: 0,
+        day_open_raw: "",
+        meet_point: "",
+        content_raw: "",
+        is_published: false,
+      });
+      handleFetchPages(); // Refresh the list of pages
     }
-  };
+    setLoading(false);
+  }
 
-  const handleEditClick = (page: PageItem) => {
-    setEditingPageId(page.id);
-    setEditTitle(page.title || "");
-    setEditSlug(page.slug || "");
-    setEditBookingIntro(page.booking_intro || "");
-    setEditTimeSection(page.time_section || "");
-    setEditDayOpen(page.day_open ? JSON.stringify(page.day_open) : "");
-    setEditMeetPoint(page.meet_point || "");
-  };
+  async function handleDelete(pageId: string) {
+    setLoading(true);
+    setMessage("");
 
-  const handleUpdatePage = async () => {
-    if (
-      editingPageId === null ||
-      editTitle.trim() === "" ||
-      editSlug.trim() === ""
-    )
-      return;
-
-    const { data, error } = await supabase
-      .from("pages")
-      .update({
-        title: editTitle,
-        slug: editSlug,
-        booking_intro: editBookingIntro || null,
-        time_section: editTimeSection === "" ? null : editTimeSection,
-        day_open: editDayOpen ? JSON.parse(editDayOpen) : null,
-        meet_point: editMeetPoint || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", editingPageId)
-      .select();
+    const { message: successMessage, error } = await deletePageApi(pageId);
 
     if (error) {
-      console.error("Error updating page:", error);
-    } else if (data) {
-      setPages(
-        pages.map((page) =>
-          page.id === editingPageId ? (data[0] as PageItem) : page
-        )
-      );
-      setEditingPageId(null);
-      setEditTitle("");
-      setEditSlug("");
-      setEditBookingIntro("");
-      setEditTimeSection("");
-      setEditDayOpen("");
-      setEditMeetPoint("");
+      setMessage(error);
+    } else {
+      setMessage(successMessage);
+      handleFetchPages(); // Refresh the list of pages
     }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingPageId(null);
-    setEditTitle("");
-    setEditSlug("");
-    setEditBookingIntro("");
-    setEditTimeSection("");
-    setEditDayOpen("");
-    setEditMeetPoint("");
-  };
+    setLoading(false);
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Manage Pages</h1>
+    <div className="max-w-4xl mx-auto mt-10 p-6 border rounded-lg shadow-md">
+      <h1 className="text-xl font-bold mb-4">Buat BookMePage Baru</h1>
 
-      {/* Edit Page Card */}
-      {editingPageId && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Edit Page</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="editTitle">Page Title</Label>
-                <Input
-                  id="editTitle"
-                  placeholder="Title of your page"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="editSlug">Page Slug</Label>
-                <Input
-                  id="editSlug"
-                  placeholder="Slug for your page (e.g., my-awesome-page)"
-                  value={editSlug}
-                  onChange={(e) => setEditSlug(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="editBookingIntro">Booking Intro</Label>
-                <Textarea
-                  id="editBookingIntro"
-                  placeholder="Introduction for booking section"
-                  value={editBookingIntro}
-                  onChange={(e) => setEditBookingIntro(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="editTimeSection">Time Section (minutes)</Label>
-                <Input
-                  id="editTimeSection"
-                  type="number"
-                  placeholder="Duration of each time slot"
-                  value={editTimeSection}
-                  onChange={(e) =>
-                    setNewTimeSection(parseInt(e.target.value) || "")
-                  }
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="editDayOpen">Day Open (JSON)</Label>
-                <Textarea
-                  id="editDayOpen"
-                  placeholder='{"monday": true, "tuesday": false}'
-                  value={editDayOpen}
-                  onChange={(e) => setEditDayOpen(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="editMeetPoint">Meet Point</Label>
-                <Input
-                  id="editMeetPoint"
-                  placeholder="Meeting point for bookings"
-                  value={editMeetPoint}
-                  onChange={(e) => setEditMeetPoint(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleUpdatePage}>Update Page</Button>
-                <Button variant="outline" onClick={handleCancelEdit}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <form onSubmit={handleSubmit} className="space-y-4 mb-8">
+        <div>
+          <label className="block mb-1">Title</label>
+          <input
+            type="text"
+            value={form.title ?? ""}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            className="w-full border p-2 rounded"
+          />
+        </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold">Existing Pages</CardTitle>
-          <Dialog
-            open={isNewPageDialogOpen}
-            onOpenChange={setIsNewPageDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button
-                onClick={() => {
-                  setEditingPageId(null);
-                  setNewTitle("");
-                  setNewSlug("");
-                  setNewBookingIntro("");
-                  setNewTimeSection("");
-                  setNewDayOpen("");
-                  setNewMeetPoint("");
-                }}
+        <div>
+          <label className="block mb-1">Slug</label>
+          <input
+            type="text"
+            value={form.slug ?? ""}
+            onChange={(e) => setForm({ ...form, slug: e.target.value })}
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Booking Intro</label>
+          <textarea
+            value={form.booking_intro ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, booking_intro: e.target.value })
+            }
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Time Section</label>
+          <input
+            type="number"
+            value={form.time_section ?? 0}
+            onChange={(e) =>
+              setForm({ ...form, time_section: parseInt(e.target.value) })
+            }
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Day Open (JSON)</label>
+          <textarea
+            value={form.day_open_raw ?? ""}
+            onChange={(e) => setForm({ ...form, day_open_raw: e.target.value })}
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Meet Point</label>
+          <input
+            type="text"
+            value={form.meet_point ?? ""}
+            onChange={(e) => setForm({ ...form, meet_point: e.target.value })}
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Content (JSON)</label>
+          <textarea
+            value={form.content_raw ?? ""}
+            onChange={(e) => setForm({ ...form, content_raw: e.target.value })}
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={form.is_published ?? false}
+            onChange={(e) =>
+              setForm({ ...form, is_published: e.target.checked })
+            }
+            className="mr-2"
+          />
+          <label>Is Published</label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          {loading ? "Menyimpan..." : "Simpan"}
+        </button>
+      </form>
+
+      {message && <p className="mt-4">{message}</p>}
+
+      <h2 className="text-xl font-bold mb-4 mt-8">Existing BookMe Pages</h2>
+      {loading && <p>Loading pages...</p>}
+      {!loading && pages.length === 0 && <p>No pages created yet.</p>}
+      {!loading && pages.length > 0 && (
+        <ul className="space-y-4">
+          {pages.map((page) => (
+            <li
+              key={page.id}
+              className="flex justify-between items-center border p-4 rounded-lg shadow-sm"
+            >
+              <div>
+                <h3 className="font-semibold">{page.title}</h3>
+                <p className="text-sm text-gray-600">Slug: {page.slug}</p>
+              </div>
+              <button
+                onClick={() => handleDelete(page.id)}
+                disabled={loading}
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
               >
-                Create New Page
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Page</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="newTitle">Page Title</Label>
-                  <Input
-                    id="newTitle"
-                    placeholder="Title of your page"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="newSlug">Page Slug</Label>
-                  <Input
-                    id="newSlug"
-                    placeholder="Slug for your page (e.g., my-awesome-page)"
-                    value={newSlug}
-                    onChange={(e) => setNewSlug(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="newBookingIntro">Booking Intro</Label>
-                  <Textarea
-                    id="newBookingIntro"
-                    placeholder="Introduction for booking section"
-                    value={newBookingIntro}
-                    onChange={(e) => setNewBookingIntro(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="newTimeSection">Time Section (minutes)</Label>
-                  <Input
-                    id="newTimeSection"
-                    type="number"
-                    placeholder="Duration of each time slot"
-                    value={newTimeSection}
-                    onChange={(e) =>
-                      setNewTimeSection(parseInt(e.target.value) || "")
-                    }
-                  />
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="newDayOpen">Day Open (JSON)</Label>
-                  <Textarea
-                    id="newDayOpen"
-                    placeholder='{"monday": true, "tuesday": false}'
-                    value={newDayOpen}
-                    onChange={(e) => setNewDayOpen(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="newMeetPoint">Meet Point</Label>
-                  <Input
-                    id="newMeetPoint"
-                    placeholder="Meeting point for bookings"
-                    value={newMeetPoint}
-                    onChange={(e) => setNewMeetPoint(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button onClick={handleAddPage}>Add Page</Button>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          {pages.length === 0 ? (
-            <p>No pages created yet.</p>
-          ) : (
-            <ul className="space-y-4">
-              {pages.map((page) => (
-                <li
-                  key={page.id}
-                  className="flex justify-between items-center p-4 border rounded-md shadow-sm"
-                >
-                  <div>
-                    <h3 className="text-lg font-semibold">{page.title}</h3>
-                    <p className="text-gray-600">Slug: {page.slug}</p>
-                    {page.booking_intro && (
-                      <p className="text-gray-600 text-sm">
-                        Intro: {page.booking_intro}
-                      </p>
-                    )}
-                    {page.time_section !== null && (
-                      <p className="text-gray-600 text-sm">
-                        Time Section: {page.time_section} minutes
-                      </p>
-                    )}
-                    {page.day_open && (
-                      <p className="text-gray-600 text-sm">
-                        Days Open: {JSON.stringify(page.day_open)}
-                      </p>
-                    )}
-                    {page.meet_point && (
-                      <p className="text-gray-600 text-sm">
-                        Meet Point: {page.meet_point}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => handleEditClick(page)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleDeletePage(page.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

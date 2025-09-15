@@ -1,32 +1,40 @@
-import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
+"use client";
+
 import Image from "next/image";
+import { useSession } from "@/components/SessionProvider";
+import { createClient } from "@/lib/supabase/client";
+import { Tables } from "@/lib/supabase/db";
+import { useState, useEffect } from "react";
 
-export default async function Page() {
-  const cookieStore = cookies();
-  const supabase = await createClient(cookieStore);
+export default function Page() {
+  const { session } = useSession();
+  const supabase = createClient();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
 
-  const { data: profile } = session
-    ? await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single()
-    : { data: null };
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (session?.user) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching profile:", error);
+        } else {
+          setProfile(data);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [session, supabase]);
 
   return (
     <div>
       <pre>{JSON.stringify(profile, null, 2)}</pre>
-      <Image
-        src="https://lh3.googleusercontent.com/a/ACg8ocIaYvr95HIl9-aHizPbDPMnYiP3ltUns-iBH89gF0062Swvqtrp=s96-c"
-        alt="Next.js Logo"
-        width={180}
-        height={37}
-      />
     </div>
   );
 }

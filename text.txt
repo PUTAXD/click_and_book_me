@@ -1,0 +1,44 @@
+Sisi Owner
+
+skenario 1 : 
+owner bisa login menggunakan akun google ( gmail ) atau bisa buat email dengan verifikasi email.
+
+skenario 2 :
+setelah Login, Owner masuk kedalam route /home.
+pada navbar terdapat 3 menu navbar (home, pages, bookings)
+pages untuk membuat page dan melihat list pages yang sudah dibuat
+booking untuk melihat list client yang melakukan booking pada owner
+
+skenario 3 : 
+owner ke /pages lalu menekan tombol create page
+muncul dialog untuk mengisi informasi pembuatan page
+    dialog 1 : 
+        page title 
+        page link ( slug ) 
+        page intro
+    dialog 2 :
+        How long are your meetings for? ( time_section int4 )
+        What's your typical schedule? ( day_open json )
+    dialog 3 : 
+        meet_point (text)
+    dialog 4 : 
+        What information people have to fill? ( content json)
+
+skenario 4 : 
+owner ke /bookings, pada menu ini terdapat list pages dahulu.
+owner menekan salah satu pages, lalu melihat list client yang sudah melakukan booking ( sebagai contoh slugnya /dewaGanteng)
+Terdapat 1 card berisi list client ( pending )
+Terdapat 1 card berisi list client ( Accepted )
+
+owner menekan 1 client pada card pending, muncul informasi sesuai dengan input form pada page.
+setelah owner membaca, owner menekan tombol accept.
+nama client tersebut akan hilang pada card pending dan pindah ke card accepted.
+
+client yang lain tidak bisa lagi menekan tanggal yang sudah di accept
+
+
+Sisi Client : 
+Skenario 1 : 
+Client menekan salah satu page owner melalui slug yang dibuat oleh owner
+lalu client dapat menekan tanggal yang masih avalaible untuk di pesan
+setelah pemilihan tanggal, client mengisi informasi sesuai dengan form yang dibuat oleh owner

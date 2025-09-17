@@ -1,0 +1,33 @@
+[
+    {
+      "type": "text",
+      "label": "Position Applied For",
+      "required": true,
+      "value": "Frontend Developer"
+    },
+    {
+      "type": "number",
+      "label": "Years of Experience",
+      "required": true,
+      "value": 3
+    },
+    {
+      "type": "text",
+      "label": "Portfolio Link",
+      "required": false,
+      "value": "https://myportfolio.dev"
+    },
+    {
+      "type": "date",
+      "label": "Available Start Date",
+      "required": true,
+      "value": "2025-10-01"
+    },
+    {
+      "type": "long text",
+      "label": "Additional Notes or Questions",
+      "required": false,
+      "value": "I am open to hybrid or remote work."
+    }
+  ]
+  

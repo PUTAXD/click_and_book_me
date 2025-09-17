@@ -1,0 +1,28 @@
+[
+    {
+      "type": "text",
+      "label": "Position Applied For",
+      "required": true
+    },
+    {
+      "type": "number",
+      "label": "Years of Experience",
+      "required": true
+    },
+    {
+      "type": "text",
+      "label": "Portfolio Link",
+      "required": false
+    },
+    {
+      "type": "date",
+      "label": "Available Start Date",
+      "required": true
+    },
+    {
+      "type": "long text",
+      "label": "Additional Notes or Questions",
+      "required": false
+    }
+  ]
+  

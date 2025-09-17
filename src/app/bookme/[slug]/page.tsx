@@ -12,7 +12,7 @@ export default async function Page({
   const supabase = await createClient();
 
   const { data: pages, error } = await supabase
-    .from("pages")
+    .from("published_page")
     .select("*")
     .eq("slug", slug)
     .eq("is_published", true) // optional: hanya ambil kalau published

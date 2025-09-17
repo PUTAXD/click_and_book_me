@@ -24,7 +24,7 @@ export type Database = {
           is_published: boolean | null;
           meet_point: string | null;
           owner_id: string;
-          slug: string | null;
+          slug: string;
           time_section: number | null;
           title: string;
           updated_at: string | null;
@@ -38,8 +38,8 @@ export type Database = {
           is_published?: boolean | null;
           meet_point?: string | null;
           owner_id: string;
-          slug: string | null;
-          time_section: number | null;
+          slug: string;
+          time_section?: number | null;
           title: string;
           updated_at?: string | null;
         };
@@ -52,7 +52,7 @@ export type Database = {
           is_published?: boolean | null;
           meet_point?: string | null;
           owner_id?: string;
-          slug?: string | null;
+          slug?: string;
           time_section?: number | null;
           title?: string;
           updated_at?: string | null;
@@ -105,7 +105,39 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      published_page: {
+        Row: {
+          booking_intro: string | null;
+          content: Json | null;
+          day_open: Json | null;
+          is_published: boolean | null;
+          meet_point: string | null;
+          slug: string | null;
+          time_section: number | null;
+          title: string | null;
+        };
+        Insert: {
+          booking_intro?: string | null;
+          content?: Json | null;
+          day_open?: Json | null;
+          is_published?: boolean | null;
+          meet_point?: string | null;
+          slug?: string | null;
+          time_section?: number | null;
+          title?: string | null;
+        };
+        Update: {
+          booking_intro?: string | null;
+          content?: Json | null;
+          day_open?: Json | null;
+          is_published?: boolean | null;
+          meet_point?: string | null;
+          slug?: string | null;
+          time_section?: number | null;
+          title?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       [_ in never]: never;

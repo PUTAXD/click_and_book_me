@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "@/components/SessionProvider";
 import {
-  fetchPagesApi,
-  createPageApi,
-  deletePageApi,
-  BookMePageInsert,
-  Page,
-} from "@/lib/api/pages";
+  serverFetchPages,
+  serverCreatePage,
+  serverDeletePage,
+} from "@/app/pages/actions"; // Import server actions
+import { BookMePageInsert, Page } from "@/lib/api/pages"; // Keep types
 
 export default function NewBookMePage() {
-  const { session } = useSession();
+  // No need for useSession here, session is handled in server actions
 
   const [form, setForm] = useState<
     Partial<BookMePageInsert> & { day_open_raw?: string; content_raw?: string }
@@ -32,11 +30,11 @@ export default function NewBookMePage() {
 
   useEffect(() => {
     handleFetchPages();
-  }, [session]);
+  }, []); // Empty dependency array as session is not a direct dependency anymore
 
   async function handleFetchPages() {
     setLoading(true);
-    const { pages: fetchedPages, error } = await fetchPagesApi(session);
+    const { pages: fetchedPages, error } = await serverFetchPages(); // Call server action
 
     if (error) {
       setMessage(error);
@@ -52,10 +50,7 @@ export default function NewBookMePage() {
     setLoading(true);
     setMessage("");
 
-    const { message: successMessage, error } = await createPageApi(
-      form,
-      session
-    );
+    const { message: successMessage, error } = await serverCreatePage(form); // Call server action
 
     if (error) {
       setMessage(error);
@@ -80,7 +75,7 @@ export default function NewBookMePage() {
     setLoading(true);
     setMessage("");
 
-    const { message: successMessage, error } = await deletePageApi(pageId);
+    const { message: successMessage, error } = await serverDeletePage(pageId); // Call server action
 
     if (error) {
       setMessage(error);

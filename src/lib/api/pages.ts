@@ -1,15 +1,17 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server"; // Corrected import
 import { Json, Tables, TablesInsert } from "@/lib/supabase/db";
 import { Session } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
 export type BookMePageInsert = TablesInsert<"pages">;
 export type Page = Tables<"pages">;
 
-const supabase = createClient();
-
 export async function fetchPagesApi(
   session: Session | null
 ): Promise<{ pages: Page[]; error: string | null }> {
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore); // Use createClient and await it
+
   if (!session?.user) {
     return { pages: [], error: "User not logged in." };
   }
@@ -33,6 +35,9 @@ export async function createPageApi(
   },
   session: Session | null
 ): Promise<{ message: string; error: string | null }> {
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore); // Use createClient and await it
+
   if (!session?.user) {
     return { message: "", error: "User not logged in." };
   }
@@ -81,6 +86,9 @@ export async function createPageApi(
 export async function deletePageApi(
   pageId: string
 ): Promise<{ message: string; error: string | null }> {
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore); // Use createClient and await it
+
   const { error } = await supabase.from("pages").delete().eq("id", pageId);
 
   if (error) {

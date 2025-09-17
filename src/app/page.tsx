@@ -1,36 +1,32 @@
-"use client";
-
 import Image from "next/image";
-import { useSession } from "@/components/SessionProvider";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server"; // Use server-side client
 import { Tables } from "@/lib/supabase/db";
-import { useState, useEffect } from "react";
+import { cookies } from "next/headers"; // Import cookies
 
-export default function Page() {
-  const { session } = useSession();
-  const supabase = createClient();
+export default async function Page() {
+  // Make component async
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore); // Instantiate server-side supabase client
 
-  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (session?.user) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
+  let profile: Tables<"profiles"> | null = null;
 
-        if (error) {
-          console.error("Error fetching profile:", error);
-        } else {
-          setProfile(data);
-        }
-      }
-    };
+  if (session?.user) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
 
-    fetchProfile();
-  }, [session, supabase]);
+    if (error) {
+      console.error("Error fetching profile:", error);
+    } else {
+      profile = data;
+    }
+  }
 
   return (
     <div>
